@@ -73,7 +73,7 @@ void KbLightWidget::on_showAnimBox_clicked(bool checked){
     } else {
         if(light)
             stopAnimationPreview();
-        keyWidget->displayColorMap(ColorMap());
+        keyWidget->displayColorMap(ColorMap(), QSet<QString>(), std::numeric_limits<quint64>::max());
     }
     CkbSettings::set("UI/Light/ShowBaseOnly", !checked);
 }
@@ -108,12 +108,12 @@ void KbLightWidget::newSelection(const QStringList& selection){
         ui->selLabel->setText(tr("Click to select"));
     } else if(count == 1) {
         // This is done this way to aid translation
-        if(!light->map().isKeyboard() || light->map().model() == KeyMap::K55)
+        if(!light->map().isKeyboard() || light->map().model() == KeyMap::K55 || light->map().model() == KeyMap::K55PRO)
             ui->selLabel->setText(tr("1 zone selected"));
         else
             ui->selLabel->setText(tr("1 key selected"));
     } else {
-        if(!light->map().isKeyboard() || light->map().model() == KeyMap::K55)
+        if(!light->map().isKeyboard() || light->map().model() == KeyMap::K55 || light->map().model() == KeyMap::K55PRO)
             ui->selLabel->setText(tr("%1 zones selected").arg(count));
         else
             ui->selLabel->setText(tr("%1 keys selected").arg(count));
@@ -172,7 +172,7 @@ void KbLightWidget::stateChange(Qt::ApplicationState state){
     } else {
         if(light)
             stopAnimationPreview();
-        keyWidget->displayColorMap(ColorMap());
+        keyWidget->displayColorMap(ColorMap(), QSet<QString>(), std::numeric_limits<quint64>::max());
     }
 }
 
@@ -217,9 +217,9 @@ void KbLightWidget::setLegacyM95(){
 }
 
 void KbLightWidget::startAnimationPreview(){
-    connect(light, SIGNAL(frameDisplayed(const ColorMap&,const QSet<QString>&)), keyWidget, SLOT(displayColorMap(const ColorMap&,const QSet<QString>&)));
+    connect(light, &KbLight::frameDisplayed, keyWidget, &KeyWidget::displayColorMap);
 }
 
 void KbLightWidget::stopAnimationPreview(){
-    disconnect(light, SIGNAL(frameDisplayed(const ColorMap&,const QSet<QString>&)), keyWidget, SLOT(displayColorMap(const ColorMap&,const QSet<QString>&)));
+    disconnect(light, &KbLight::frameDisplayed, keyWidget, &KeyWidget::displayColorMap);
 }

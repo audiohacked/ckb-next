@@ -70,8 +70,13 @@ endif ()
 if (MACOS OR LINUX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-    find_package(Qt5 5.5.1 COMPONENTS Core Widgets Network Gui REQUIRED)
+    find_package(QT NAMES ${QT_LIST} REQUIRED COMPONENTS Core Widgets Network Gui)
+    find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets Network Gui)
+    if(QT_VERSION VERSION_GREATER_EQUAL 6)
+        find_package(Qt6 REQUIRED COMPONENTS OpenGLWidgets)
+    endif()
     find_package(ZLIB REQUIRED)
+    find_package(QuaZip REQUIRED)
 endif ()
 if (MACOS)
     find_library(FOUNDATION_LIBRARY Foundation)
@@ -89,8 +94,14 @@ AudioToolbox: ${AUDIOTOOLBOX_LIBRARY}")
     endif ()
         mark_as_advanced(FOUNDATION_LIBRARY COREAUDIO_LIBRARY AUDIOTOOLBOX_LIBRARY)
 elseif (LINUX)
-    find_package(X11 REQUIRED)
-    find_package(Qt5 5.2.0 COMPONENTS X11Extras DBus)
+    if (QT_VERSION VERSION_LESS "5.12")
+        message(FATAL "ckb-next requires Qt >= 5.12")
+    endif ()
+    find_package(Qt${QT_VERSION_MAJOR} COMPONENTS DBus)
+    if (QT_VERSION VERSION_LESS "6")
+        find_package(Qt5 REQUIRED COMPONENTS X11Extras)
+    endif ()
+    message(STATUS "Using Qt${QT_VERSION_MAJOR}")
 endif ()
 
 # Automatically handle MOC, UIC and RCC
@@ -113,8 +124,10 @@ if (MACOS OR LINUX)
               animsettingdialog.cpp
               autorun.cpp
               batterysystemtrayicon.cpp
+              ckbmainbackgroundcolour.cpp
               ckbsettings.cpp
               ckbsettingswriter.cpp
+              ckbsystemquirks.cpp
               ckbupdater.cpp
               ckbupdaterwidget.cpp
               ckbversionnumber.cpp
@@ -147,6 +160,7 @@ if (MACOS OR LINUX)
               keyaction.cpp
               keymap.cpp
               keywidget.cpp
+              keywidgetdebugger.cpp
               kperfwidget.cpp
               legacylightwidget.cpp
               macroreader.cpp
@@ -168,8 +182,10 @@ if (MACOS OR LINUX)
               animscript.h
               animsettingdialog.h
               autorun.h
+              ckbmainbackgroundcolour.h
               ckbsettings.h
               ckbsettingswriter.h
+              ckbsystemquirks.h
               ckbsystemtrayicon.h
               ckbupdater.h
               ckbupdaterwidget.h
@@ -201,6 +217,7 @@ if (MACOS OR LINUX)
               keyaction.h
               keymap.h
               keywidget.h
+              keywidgetdebugger.h
               keywidgetlayout.h
               kperfwidget.h
               legacylightwidget.h
@@ -239,6 +256,7 @@ if (MACOS OR LINUX)
               kbmodeeventmgr.ui
               kbprofiledialog.ui
               kbwidget.ui
+              keywidgetdebugger.ui
               kperfwidget.ui
               legacylightwidget.ui
               mainwindow.ui
@@ -268,13 +286,21 @@ elseif (LINUX)
         pkg_check_modules(XCB_EWMH xcb-ewmh)
         pkg_check_modules(XCB_SCREENSAVER xcb-screensaver)
 
-        if(XCB_SCREENSAVER_FOUND AND Qt5X11Extras_FOUND)
+        if(XCB_SCREENSAVER_FOUND AND (Qt5X11Extras_FOUND OR QT_VERSION_MAJOR VERSION_EQUAL 6))
             target_compile_definitions(
             ckb-next
                 PRIVATE
                     USE_XCB_SCREENSAVER)
         else()
             message(FATAL_ERROR "XCB-Screensaver or Qt5 X11Extras was not found. Either install them or pass -DUSE_XCB=0 to disable idle detection.")
+        endif()
+        if(XCB_FOUND AND (Qt5X11Extras_FOUND OR QT_VERSION_MAJOR VERSION_EQUAL 6))
+            target_compile_definitions(
+            ckb-next
+                PRIVATE
+                    USE_XCB)
+        else()
+            message(FATAL_ERROR "XCB or Qt5 X11Extras was not found. Either install them or pass -DUSE_XCB=0 to disable idle detection.")
         endif()
         if(XCB_EWMH_FOUND)
             target_compile_definitions(
@@ -290,33 +316,49 @@ elseif (LINUX)
                 message(FATAL_ERROR "XCB-EWMH was not found. Either install it or pass -DUSE_XCB=0 to disable active window detection.")
         endif()
     endif()
+
     target_sources(
         ckb-next
             PRIVATE
               media_linux.cpp)
 
     if(USE_DBUS_MENU)
-        find_package(dbusmenu-qt5 CONFIG)
-        if(NOT dbusmenu-qt5_FOUND)
-            message(FATAL_ERROR "dbusmenu-qt5 was not found. Either install it or pass -DUSE_DBUS_MENU=0 to fall back to the default Qt tray icon.")
+        if(QT_VERSION VERSION_LESS "6")
+            find_package(dbusmenu-qt5 CONFIG)
+            if(NOT dbusmenu-qt5_FOUND)
+                message(FATAL_ERROR "dbusmenu-qt5 was not found. Either install it or pass -DUSE_DBUS_MENU=0 to fall back to the default Qt tray icon.")
+            endif()
+            target_link_libraries(
+                ckb-next
+                    PRIVATE
+                    dbusmenu-qt${QT_VERSION_MAJOR}
+            )
+            include_directories(${dbusmenu-qt5_INCLUDE_DIRS})
         endif()
+
         target_link_libraries(
             ckb-next
                 PRIVATE
-                Qt5::DBus
-                dbusmenu-qt5
+                Qt${QT_VERSION_MAJOR}::DBus
         )
         target_compile_definitions(
         ckb-next
             PRIVATE
                 USE_DBUS_MENU)
 
-        include_directories(${dbusmenu-qt5_INCLUDE_DIRS})
-        qt5_add_dbus_adaptor(statusNotifierAutogen "kstatusnotifier/org.kde.StatusNotifierItem.xml"
-            "kstatusnotifier/kstatusnotifieritemdbus_p.h" KStatusNotifierItemDBus)
-        qt5_add_dbus_interface(statusNotifierAutogen "kstatusnotifier/org.freedesktop.Notifications.xml" notifications_interface)
-        qt5_add_dbus_interface(statusNotifierAutogen "kstatusnotifier/org.kde.StatusNotifierWatcher.xml" statusnotifierwatcher_interface)
-        set_property(SOURCE ${statusNotifierAutogen} PROPERTY SKIP_AUTOGEN ON)
+        if(QT_VERSION VERSION_GREATER_EQUAL "5.15")
+            qt_add_dbus_adaptor(statusNotifierAutogen "kstatusnotifier/org.kde.StatusNotifierItem.xml"
+                                "kstatusnotifier/kstatusnotifieritemdbus_p.h" KStatusNotifierItemDBus)
+            qt_add_dbus_interface(statusNotifierAutogen "kstatusnotifier/org.kde.StatusNotifierWatcher.xml" statusnotifierwatcher_interface)
+            qt_add_dbus_interface(statusNotifierAutogen "kstatusnotifier/org.freedesktop.Notifications.xml" notifications_interface)
+        else()
+            qt5_add_dbus_adaptor(statusNotifierAutogen "kstatusnotifier/org.kde.StatusNotifierItem.xml"
+                                "kstatusnotifier/kstatusnotifieritemdbus_p.h" KStatusNotifierItemDBus)
+            qt5_add_dbus_interface(statusNotifierAutogen "kstatusnotifier/org.kde.StatusNotifierWatcher.xml" statusnotifierwatcher_interface)
+            qt5_add_dbus_interface(statusNotifierAutogen "kstatusnotifier/org.freedesktop.Notifications.xml" notifications_interface)
+        endif()
+
+        #set_property(SOURCE ${statusNotifierAutogen} PROPERTY SKIP_AUTOGEN ON)
         target_sources(
             ckb-next
                 PRIVATE
@@ -325,8 +367,36 @@ elseif (LINUX)
                   kstatusnotifier/kstatusnotifieritemdbus_p.h
                   kstatusnotifier/kstatusnotifieritem.h
                   kstatusnotifier/kstatusnotifieritemprivate_p.h
+                  kstatusnotifier/debug_p.h
+                  kstatusnotifier/config-kstatusnotifieritem.h
                   ckbsystemtrayicon.cpp
                   ${statusNotifierAutogen})
+        if(QT_VERSION VERSION_GREATER_EQUAL "6")
+            qt6_add_dbus_adaptor(canonicalDbusMenuAutogen "${CMAKE_CURRENT_SOURCE_DIR}/kstatusnotifier/libdbusmenu-qt/com.canonical.dbusmenu.xml"
+                "${CMAKE_CURRENT_SOURCE_DIR}/kstatusnotifier/libdbusmenu-qt/dbusmenuexporterdbus_p.h"
+                DBusMenuExporterDBus)
+
+            #set_property(SOURCE ${canonicalDbusMenuAutogen} PROPERTY SKIP_AUTOGEN ON)
+            target_sources(
+                ckb-next
+                    PRIVATE
+                        kstatusnotifier/libdbusmenu-qt/dbusmenu_p.cpp
+                        kstatusnotifier/libdbusmenu-qt/dbusmenuexporter.cpp
+                        kstatusnotifier/libdbusmenu-qt/dbusmenuexporterdbus_p.cpp
+                        kstatusnotifier/libdbusmenu-qt/dbusmenushortcut_p.cpp
+                        kstatusnotifier/libdbusmenu-qt/dbusmenutypes_p.cpp
+                        kstatusnotifier/libdbusmenu-qt/utils.cpp
+                        kstatusnotifier/libdbusmenu-qt/dbusmenu_p.h
+                        kstatusnotifier/libdbusmenu-qt/dbusmenuexporter.h
+                        kstatusnotifier/libdbusmenu-qt/dbusmenuexporterdbus_p.h
+                        kstatusnotifier/libdbusmenu-qt/dbusmenuexporterprivate_p.h
+                        kstatusnotifier/libdbusmenu-qt/dbusmenushortcut_p.h
+                        kstatusnotifier/libdbusmenu-qt/dbusmenutypes_p.h
+                        kstatusnotifier/libdbusmenu-qt/utils_p.h
+                        kstatusnotifier/libdbusmenu-qt/debug_p.h
+                        ${canonicalDbusMenuAutogen}
+            )
+        endif()
     endif()
 endif ()
 
@@ -368,7 +438,7 @@ if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/image.qrc")
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/image.qrc" "</qresource>\n</RCC>\n")
 endif ()
 
-find_package(Qt5LinguistTools CONFIG REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR}LinguistTools CONFIG REQUIRED)
 
 # Generate translation.qrc
 # Note that the qm files haven't been generated yet
@@ -386,7 +456,11 @@ endif ()
 
 # Generate binary translations and update ts files if needed
 file(GLOB qt_translations_rel RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_LIST_DIR}/resources/translations/*.ts")
-qt5_add_translation(QM_FILES "${qt_translations_rel}")
+if (QT_VERSION VERSION_GREATER_EQUAL "5.15")
+    qt_add_translation(QM_FILES "${qt_translations_rel}")
+else ()
+    qt5_add_translation(QM_FILES "${qt_translations_rel}")
+endif ()
 add_custom_target(ckb-next-lrelease SOURCES "${QM_FILES}")
 
 # Simple target to call lupdate on demand
@@ -485,34 +559,32 @@ if (MACOS OR LINUX)
               "${CMAKE_CURRENT_SOURCE_DIR}"
               "${CMAKE_CURRENT_BINARY_DIR}")
 endif ()
-if (MACOS)
-elseif (LINUX)
-    target_include_directories(
-        ckb-next
-            SYSTEM
-            PRIVATE
-              "${X11_INCLUDE_DIR}")
-endif ()
 
-if (NOT WITH_SHIPPED_QUAZIP)
-    target_include_directories(
-        ckb-next
-            PRIVATE
-              "${QuaZip_INCLUDE_DIR}") # TODO: export QuaZip target and inherit dirs
-endif ()
+target_include_directories(
+    ckb-next
+        SYSTEM
+        PRIVATE
+          "${QuaZip_INCLUDE_DIR}")
 
 # Declare target's link dependencies
 if (MACOS OR LINUX)
     target_link_libraries(
         ckb-next
             PRIVATE
-              m
-              Threads::Threads
-              Qt5::Core
-              Qt5::Network
-              Qt5::Widgets
-              Qt5::Gui
-              ZLIB::ZLIB)
+                m
+                Threads::Threads
+                Qt${QT_VERSION_MAJOR}::Core
+                Qt${QT_VERSION_MAJOR}::Network
+                Qt${QT_VERSION_MAJOR}::Widgets
+                Qt${QT_VERSION_MAJOR}::Gui
+                ZLIB::ZLIB)
+if (QT_VERSION VERSION_GREATER_EQUAL "6")
+    target_link_libraries(
+        ckb-next
+            PRIVATE
+                Qt6::OpenGLWidgets)
+endif ()
+
 endif ()
 if(MACOS)
     target_link_libraries(
@@ -522,40 +594,46 @@ if(MACOS)
               "${FOUNDATION_LIBRARY}"
               "${AUDIOTOOLBOX_LIBRARY}")
 elseif (LINUX)
+    if (QT_VERSION_MAJOR VERSION_EQUAL "5")
+        target_link_libraries(
+            ckb-next
+                PRIVATE
+                  Qt5::X11Extras)
+    endif ()
+
     target_link_libraries(
         ckb-next
             PRIVATE
-              "${X11_LIBRARIES}"
               "${XCB_EWMH_LIBRARIES}"
-              "${XCB_SCREENSAVER_LIBRARIES}"
-              Qt5::X11Extras)
+              "${XCB_SCREENSAVER_LIBRARIES}")
+
     if (PULSEAUDIO_FOUND)
-    target_link_libraries(
-        ckb-next
-            PRIVATE
-              "${PULSEAUDIO_LIBRARIES}")
+        target_link_libraries(
+            ckb-next
+                PRIVATE
+                  "${PULSEAUDIO_LIBRARIES}")
     else()
         message(WARNING "PulseAudio not found. Mute indicator will not function.")
     endif ()
 endif()
 
-if (WITH_SHIPPED_QUAZIP)
-    target_link_libraries(
-        ckb-next
-            PRIVATE
-              QuaZip::quazip5)
-else ()
-    target_link_libraries(
-        ckb-next
-            PRIVATE
-            "${QuaZip_LIBRARIES}")
-endif ()
+target_link_libraries(
+    ckb-next
+        PRIVATE
+        "${QuaZip_LIBRARIES}")
 
 # Target compile features and options
-set_target_properties(
-    ckb-next
-        PROPERTIES
-          CXX_STANDARD 11)
+if (QT_VERSION_MAJOR VERSION_LESS "6")
+    set_target_properties(
+        ckb-next
+            PROPERTIES
+              CXX_STANDARD 11)
+else ()
+    set_target_properties(
+        ckb-next
+            PROPERTIES
+              CXX_STANDARD 17)
+endif()
 
 target_compile_options(
     ckb-next

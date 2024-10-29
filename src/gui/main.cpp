@@ -11,6 +11,10 @@
 #include <QTranslator>
 #include "compat/qrand.h"
 #include <QMessageBox>
+#include "keywidgetdebugger.h"
+#include <QSurfaceFormat>
+#include <iostream>
+#include "ckbsystemquirks.h"
 
 QSharedMemory appShare("ckb-next");
 
@@ -38,6 +42,9 @@ enum CommandLineParseResults {
 
 bool startDelay = false;
 bool silent = false;
+#ifndef QT_NO_DEBUG
+bool kwdebug = false;
+#endif
 
 /**
  * parseCommandLine - Setup options and parse command line arguments.
@@ -86,6 +93,11 @@ CommandLineParseResults parseCommandLine(QCommandLineParser &parser, QString *er
     parser.addOption(delayOption);
     parser.addOption(silentOption);
 
+#ifndef QT_NO_DEBUG
+    QCommandLineOption kwdebugOption("kwdebug", QObject::tr("Enables the KeyWidget debug window"));
+    parser.addOption(kwdebugOption);
+#endif
+
     /* parse arguments */
     if (!parser.parse(QCoreApplication::arguments())) {
         // set error, if there already are some
@@ -111,6 +123,12 @@ CommandLineParseResults parseCommandLine(QCommandLineParser &parser, QString *er
     if(parser.isSet(silentOption)) {
         silent = true;
     }
+
+#ifndef QT_NO_DEBUG
+    if(parser.isSet(kwdebugOption)) {
+        kwdebug = true;
+    }
+#endif
 
     if (parser.isSet(backgroundOption)) {
         // open application in background
@@ -206,24 +224,62 @@ bool checkIfQtCreator(){
     return false;
 }
 
-int main(int argc, char *argv[]){
-QSettings::setDefaultFormat(CkbSettings::Format);
+const char* DISPLAY = nullptr;
+const char* argv0 = nullptr;
+
+int main(int argc, char* argv[]){
+    // Warning: The order of everything in main() is very fragile
+    // Please be very careful if shuffling things around
+
+    // First assign argv0 because we need it in CkbSystemQuirks
+    if(argc > 0)
+        argv0 = argv[0];
+
+    // Setup names and versions
+    // This needs to be done before the first QSettings is created
+    QCoreApplication::setOrganizationName("ckb-next");
+    QCoreApplication::setApplicationVersion(CKB_NEXT_VERSION_STR);
+    QCoreApplication::setApplicationName("ckb-next");
+
+    // Initialize a temporary QSettings very early to apply quirks before QApplication is created
+    QSettings::setDefaultFormat(CkbSettings::Format);
+    QSettings* tmpSettings = new QSettings();
+
+    // Apply OpenGL-related settings before QApplication
+    // Note: The settings are not exposed in the UI
+    QSurfaceFormat fmt;
+
+    int msaa = tmpSettings->value("Program/GL/MSAA", CkbSystemQuirks::getMaxMSAA()).toInt();
+    if(msaa >= 0 && msaa <= 16)
+        fmt.setSamples(msaa);
+
+    // HACK: Disable vsync so that the GUI thread isn't blocked when monitors enter power saving
+    const int swapInterval = tmpSettings->value("Program/GL/SwapInterval", 0).toInt();
+    if(swapInterval >= 0)
+        fmt.setSwapInterval(swapInterval);
+
+    QSurfaceFormat::setDefaultFormat(fmt);
 
 #ifdef Q_OS_LINUX
     // Get rid of "-session" before Qt parses the arguments
-    for(int i = 0; i < argc; i++){
-        if(!strcmp(argv[i], "-session")){
+    // Also store any value of -display
+    for(int i = 1; i < argc; i++){
+        QByteArray arg(argv[i]);
+        if (arg.startsWith("--"))
+            arg.remove(0, 1);
+        if(arg == "-session"){
             argv[i][1] = 'b';
             argv[i][2] = '\0';
-            if(i + 1 < argc)
-                argv[i + 1][0] = '\0';
-            break;
+            if(i + 1 < argc) {
+                argv[++i][0] = '\0';
+            }
+        } else if (arg == "-display" && i < argc - 1) {
+            DISPLAY = argv[++i];
         }
     }
 #endif
 
-    QSettings* tmpSettings = new QSettings(CkbSettings::Format, QSettings::UserScope, "ckb-next", "ckb-next");
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     // Explicitly request high dpi scaling if desired
     // Needs to be called before QApplication is constructed
     if(tmpSettings->value("Program/HiDPI", false).toBool())
@@ -254,15 +310,10 @@ QSettings::setDefaultFormat(CkbSettings::Format);
         tmpSettings->setValue("Program/SettingsVersion", CKB_NEXT_SETTINGS_VER);
     }
 
-    // Setup names and versions
-    QCoreApplication::setOrganizationName("ckb-next");
-    QCoreApplication::setApplicationVersion(CKB_NEXT_VERSION_STR);
-    QCoreApplication::setApplicationName("ckb-next");
-
     // Setup argument parser
     QCommandLineParser parser;
     QString errorMessage;
-    parser.setApplicationDescription("Open Source Corsair Input Device Driver for Linux and OSX.");
+    parser.setApplicationDescription(CKB_NEXT_DESCRIPTION);
     bool background = false;
 
     // Although the daemon runs as root, the GUI needn't and shouldn't be, as it has the potential to corrupt settings data.
@@ -274,7 +325,7 @@ QSettings::setDefaultFormat(CkbSettings::Format);
     // Seed the RNG for UsbIds
     Q_SRAND(QDateTime::currentMSecsSinceEpoch());
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 3, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(5, 3, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     // Enable HiDPI support
     qApp->setAttribute(Qt::AA_UseHighDpiPixmaps);
 #endif
@@ -373,9 +424,20 @@ QSettings::setDefaultFormat(CkbSettings::Format);
     if(QtCreator)
         QThread::sleep(1);
 
+    std::cout << "ckb-next " << CKB_NEXT_VERSION_STR << std::endl;
+    qDebug() << "Using" << CkbSystemQuirks::getGlVendor() << CkbSystemQuirks::getGlRenderer();
+
     MainWindow w(silent);
     if(!background)
         w.show();
+
+#ifndef QT_NO_DEBUG
+    if(kwdebug){
+        KeyWidgetDebugger* d = new KeyWidgetDebugger;
+        d->show();
+        QObject::connect(&w, &MainWindow::destroyed, [d](){delete d;});
+    }
+#endif
 
     return a.exec();
 }

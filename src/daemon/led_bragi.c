@@ -32,9 +32,20 @@ static inline size_t bragi_led_count(usbdevice* kb){
     LED_CASE_K(P_K60_PRO_RGB, 123);
     LED_CASE_K(P_K60_PRO_RGB_LP, 123);
     LED_CASE_K(P_K60_PRO_RGB_SE, 123);
+    LED_CASE_K(P_K60_PRO_MONO, 123);
+    LED_CASE_K(P_K60_PRO_TKL, 123);
     LED_CASE_M(P_KATAR_PRO_XT, 1);
     LED_CASE_M(P_KATAR_PRO, 1);
     LED_CASE_M(P_M55_RGB_PRO, 2);
+    LED_CASE_K(P_K55_PRO, 6);
+    LED_CASE_K(P_K55_PRO_XT, 137);
+    LED_CASE_M(P_DARK_CORE_RGB_PRO, 12);
+    LED_CASE_M(P_DARK_CORE_RGB_PRO_SE, 12);
+    LED_CASE_K(P_K100_OPTICAL, 193);
+    LED_CASE_K(P_K100_MECHANICAL, 193);
+    LED_CASE_K(P_K100_OPTICAL_VARIANT, 193);
+    LED_CASE_K(P_K65_MINI, 123);
+    LED_CASE_K(P_K70_TKL, 193);
     default:
         ckb_err("Unknown product 0x%hx", kb->product);
         return 0;
@@ -66,17 +77,30 @@ static int updatergb_bragi(usbdevice* kb, int force, const size_t led_offset){
     int laston = memcmp(lastlight->r + led_offset, pkt, CPY_SZ(r)) ||
                  memcmp(lastlight->g + led_offset, pkt, CPY_SZ(g)) ||
                  memcmp(lastlight->b + led_offset, pkt, CPY_SZ(b));
-    if (newon != laston || force)
-        bragi_set_property(kb, BRAGI_BRIGHTNESS, newon ? 1000 : 0);
 
     static_assert(sizeof(pkt) >= 7 + N_KEYS_EXTENDED * 3, "Bragi RGB packet must be large enough to fit all possible zones in the keymap");
 
-    memcpy(pkt + 7, newlight->r + led_offset, CPY_SZ(r));
-    memcpy(pkt + 7 + CPY_SZ(r), newlight->g + led_offset, CPY_SZ(g));
-    memcpy(pkt + 7 + CPY_SZ(r) + CPY_SZ(g), newlight->b + led_offset, CPY_SZ(b));
+    size_t bytes = zones;
 
-    if(bragi_write_to_handle(kb, pkt, BRAGI_LIGHTING_HANDLE, sizeof(pkt), 3 * zones))
+    memcpy(pkt + 7, newlight->r + led_offset, CPY_SZ(r));
+    if(!IS_MONOCHROME_DEV(kb)) {
+        bytes *= 3; // 3 channels
+        memcpy(pkt + 7 + CPY_SZ(r), newlight->g + led_offset, CPY_SZ(g));
+        memcpy(pkt + 7 + CPY_SZ(r) + CPY_SZ(g), newlight->b + led_offset, CPY_SZ(b));
+    }
+
+    if(bragi_write_to_handle(kb, pkt, BRAGI_LIGHTING_HANDLE, sizeof(pkt), bytes))
         return 1;
+
+    // Keep this check below the write.
+    // This is done to prevent a delay when turning the lights off, caused by slow HW.
+    // There seems to be no way to prevent the delay when turning the lights back on.
+    if (newon != laston || force){
+        if(kb->brightness_mode == BRIGHTNESS_HARDWARE_COARSE)
+            bragi_set_property(kb, BRAGI_BRIGHTNESS_COARSE, newon ? 3 : 0);
+        else if(kb->brightness_mode == BRIGHTNESS_HARDWARE_FINE)
+            bragi_set_property(kb, BRAGI_BRIGHTNESS, newon ? 1000 : 0);
+    }
 
     lastlight->forceupdate = newlight->forceupdate = 0;
 
@@ -90,4 +114,48 @@ int updatergb_mouse_bragi(usbdevice* kb, int force){
 
 int updatergb_keyboard_bragi(usbdevice* kb, int force){
     return updatergb_bragi(kb, force, 0);
+}
+
+#define BRAGI_ALT_RGB_HEADER 2
+static inline int updatergb_alt_bragi(usbdevice* kb, int force){
+    if(!kb->active)
+        return 0;
+    lighting* lastlight = &kb->profile->lastlight;
+    lighting* newlight = &kb->profile->currentmode->light;
+
+    // Ideally this will be moved to the usbdevice struct at some point
+    const size_t zones = bragi_led_count(kb);
+
+    // Don't do anything if the lighting hasn't changed
+    if(!force && !lastlight->forceupdate && !newlight->forceupdate
+            && !rgbcmp(lastlight, newlight, zones, 0))
+        return 0;
+
+    uchar pkt1[BRAGI_JUMBO_SIZE] = {0};
+    pkt1[7] = 0x12; // Some kind of header?
+
+    uchar* start = pkt1 + 7 + BRAGI_ALT_RGB_HEADER;
+    // Copy red first
+    for(size_t i = 0; i < zones; i++)
+        start[i * 3] = newlight->r[i];
+
+    // Green
+    for(size_t i = 0; i < zones; i++)
+        start[i * 3 + 1] = newlight->g[i];
+
+    // Blue
+    for(size_t i = 0; i < zones; i++)
+        start[i * 3 + 2] = newlight->b[i];
+
+    if(bragi_write_to_handle(kb, pkt1, BRAGI_LIGHTING_HANDLE, sizeof(pkt1), 3 * zones + BRAGI_ALT_RGB_HEADER))
+        return 1;
+
+    lastlight->forceupdate = newlight->forceupdate = 0;
+
+    memcpy(lastlight, newlight, sizeof(lighting));
+    return 0;
+}
+
+int updatergb_keyboard_bragi_alt(usbdevice* kb, int force){
+    return updatergb_alt_bragi(kb, force);
 }

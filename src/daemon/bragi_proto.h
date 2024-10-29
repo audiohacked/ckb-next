@@ -18,10 +18,10 @@
 #define BRAGI_BRIGHTNESS    0x02
 #define BRAGI_MODE          0x03
 #define BRAGI_ANGLE_SNAP    0x07
-#define BRAG_APP_VER        0x13
-#define BRAG_BLD_VER        0x14
-#define BRAG_RADIO_APP_VER  0x15
-#define BRAG_RADIO_BLD_VER  0x16
+#define BRAGI_APP_VER       0x13
+#define BRAGI_BLD_VER       0x14
+#define BRAGI_RADIO_APP_VER 0x15
+#define BRAGI_RADIO_BLD_VER 0x16
 #define BRAGI_DPI_INDEX     0x1E
 #define BRAGI_DPI_MASK      0x1F
 #define BRAGI_DPI_X         0x21
@@ -30,6 +30,8 @@
 #define BRAGI_DPI1_COLOR    0x30
 #define BRAGI_DPI2_COLOR    0x31
 #define BRAGI_HWLAYOUT      0x41
+#define BRAGI_BRIGHTNESS_COARSE 0x44
+
 // Untested. Only known because CUE complained about it in its logs
 #define BRAGI_MAX_POLLRATE  0x96
 
@@ -56,11 +58,18 @@
 
 // Resources (used to get handles)
 #define BRAGI_RES_LIGHTING  0x01
+#define BRAGI_RES_LIGHTING_MONOCHROME 0x10
+// Used for devices that have RGBRGBRGB packets instead of RRRGGGBBB
+#define BRAGI_RES_ALT_LIGHTING  0x22
+// Secondary lighting packet
+#define BRAGI_RES_LIGHTING_EXTRA  0x2e
 #define BRAGI_RES_PAIRINGID 0x05
+#define BRAGI_RES_ENCRYPTIONKEY 0x06
 
 // ckb-specific macros
 #define BRAGI_LIGHTING_HANDLE 0x00
 #define BRAGI_GENERIC_HANDLE  0x01 // This is used for quick read/writes. Do NOT leave it open.
+#define BRAGI_2ND_LIGHTING_HANDLE 0x02 // This one is opened if a device needs a secondary lighting hangle
 
 // HID input (2 bytes)
 #define BRAGI_INPUT_0       0x00

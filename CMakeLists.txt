@@ -27,7 +27,7 @@
 
 # Lower it _only_ if tested to work correctly with that version!
 # Might be as low as 3.3, but again, use at your own risk
-cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13.4 FATAL_ERROR)
 
 project(ckb-next LANGUAGES C CXX)
 include(VERSION.cmake)
@@ -120,6 +120,8 @@ option(DEBUG_USB_INPUT "Show the contents of USB packets being received from dev
 option(DEBUG_MUTEX     "Show debugging information regarding thread synchronisation." OFF)
 option(NO_FAIR_MUTEX_QUEUEING "Disable fair mutex queueing. Debugging only." OFF)
 option(DEBUG_INPUT_SYNC "Print a debug message every time an event bundle is delivered to the OS." OFF)
+option(FPS_COUNTER     "Enable FPS counters." OFF)
+option(WERROR     "Enable Werror (for CI)" OFF)
 
 # Make sure NO_FAIR_MUTEX_QUEUEING is set if TSAN is enabled
 # Otherwise you end up with threading issues that are not detected
@@ -142,6 +144,8 @@ if (MACOS)
 elseif (LINUX)
     set(INSTALL_DIR_ANIMATIONS "${CMAKE_INSTALL_LIBEXECDIR}/${ANIMATIONS_DIR_NAME}"
         CACHE STRING "Where to install animations.")
+    set(INSTALL_DIR_UTILITIES "${CMAKE_INSTALL_LIBEXECDIR}"
+        CACHE STRING "Where to install miscellaneous utilities.")
 endif ()
 
 # Options: other
@@ -149,8 +153,12 @@ option(SAFE_INSTALL "Execute pre-install tasks to ensure correct installation.
     Intended to be used with direct installations without package manager." OFF)
 option(SAFE_UNINSTALL "Execute pre-uninstall tasks to ensure correct removal.
     Intended to be used with direct removals without package manager." OFF)
+option(PREFER_QT6 "Build with Qt 6 if available." OFF)
 
-option(WITH_SHIPPED_QUAZIP "Use shipped QuaZip5 instead of system package" OFF)
+set(QT_LIST Qt5)
+if (PREFER_QT6)
+    list(INSERT QT_LIST 0 Qt6)
+endif ()
 
 if (NOT WITH_GUI)
     message(WARNING "Building without GUI. Proceed only if you know what you are doing.")

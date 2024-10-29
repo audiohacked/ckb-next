@@ -202,6 +202,28 @@ const key keymap[N_KEYS_EXTENDED] = {
     // Strafe logo backlight
     { "logo",      0x7d, KEY_CORSAIR },
 
+    // 20 empty entries for the K100 (patched by the bragi keymap)
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+    { 0,            -1,   KEY_NONE },
+
     // Keys not present on any device
     { "lightup",    -1, KEY_BRIGHTNESSUP },
     { "lightdn",    -1, KEY_BRIGHTNESSDOWN },
@@ -294,7 +316,6 @@ const key keymap[N_KEYS_EXTENDED] = {
 /*
 { "ro",             -1, KEY_RO },
 { "hanja",          -1, KEY_HANJA },
-{ "profswitch",    128, KEY_CORSAIR },
 { "katahira",       -1, KEY_KATAKANAHIRAGANA },
 { "hangul",         -1, KEY_HANGEUL },
 the G keys after G6, if they ever make another keyboard with them
@@ -418,7 +439,7 @@ const key keymap_bragi[N_KEYS_BRAGI_PATCH] = {
     { "rwin",          112, KEY_RIGHTMETA },
     { "light",         113, KEY_CORSAIR },
     { "lock",            1, KEY_CORSAIR },
-    { 0,                -1, KEY_NONE },
+    { "ro",            115, KEY_RO },
     { 0,                -1, KEY_NONE },
     { 0,                -1, KEY_NONE },
     { 0,                -1, KEY_NONE },
@@ -431,7 +452,7 @@ const key keymap_bragi[N_KEYS_BRAGI_PATCH] = {
     { "next",          125, KEY_NEXTSONG },
     { "prev",          126, KEY_PREVIOUSSONG },
     { "mr",             -1, KEY_CORSAIR },
-    { 0,                -1, KEY_NONE },
+    { "profswitch",    128, KEY_CORSAIR },
     { 0,                -1, KEY_NONE },
     { 0,                -1, KEY_NONE },
     { "g1",            131, KEY_CORSAIR },
@@ -440,40 +461,63 @@ const key keymap_bragi[N_KEYS_BRAGI_PATCH] = {
     { "g4",            134, KEY_CORSAIR },
     { "g5",            135, KEY_CORSAIR },
     { "g6",            136, KEY_CORSAIR },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
-    { 0,                -1, KEY_NONE },
+    { "ctrlwheelb",    137, KEY_NONE },
+    { "topbar1",       138, KEY_NONE },
+    { "topbar2",       139, KEY_NONE },
+    { "topbar3",       140, KEY_NONE },
+    { "topbar4",       141, KEY_NONE },
+    { "topbar5",       142, KEY_NONE },
+    { "topbar6",       143, KEY_NONE },
+    { "topbar7",       144, KEY_NONE },
+    { "topbar8",       145, KEY_NONE },
+    { "topbar9",       146, KEY_NONE },
+    { "topbar10",      147, KEY_NONE },
+    { "topbar11",      148, KEY_NONE },
+    { "topbar12",      149, KEY_NONE },
+    { "topbar13",      150, KEY_NONE },
+    { "topbar14",      151, KEY_NONE },
+    { "topbar15",      152, KEY_NONE },
+    { "topbar16",      153, KEY_NONE },
+    { "topbar17",      154, KEY_NONE },
+    { "topbar18",      155, KEY_NONE },
+    { "topbar19",      156, KEY_NONE },
+    { "topbar20",      157, KEY_NONE },
+    { "topbar21",      158, KEY_NONE },
+    { "topbar22",      159, KEY_NONE },
+    { "leftbar1",      160, KEY_NONE },
+    { "leftbar2",      161, KEY_NONE },
+    { "leftbar3",      162, KEY_NONE },
+    { "leftbar4",      163, KEY_NONE },
+    { "leftbar5",      164, KEY_NONE },
+    { "leftbar6",      165, KEY_NONE },
+    { "leftbar7",      166, KEY_NONE },
+    { "leftbar8",      167, KEY_NONE },
+    { "leftbar9",      168, KEY_NONE },
+    { "leftbar10",     169, KEY_NONE },
+    { "leftbar11",     170, KEY_NONE },
+    { "rightbar1",     171, KEY_NONE },
+    { "rightbar2",     172, KEY_NONE },
+    { "rightbar3",     173, KEY_NONE },
+    { "rightbar4",     174, KEY_NONE },
+    { "rightbar5",     175, KEY_NONE },
+    { "rightbar6",     176, KEY_NONE },
+    { "rightbar7",     177, KEY_NONE },
+    { "rightbar8",     178, KEY_NONE },
+    { "rightbar9",     179, KEY_NONE },
+    { "rightbar10",    180, KEY_NONE },
+    { "rightbar11",    181, KEY_NONE },
+    { "ctrlwheel2",    182, KEY_NONE },
+    { "ctrlwheel3",    183, KEY_NONE },
+    { "ctrlwheel4",    184, KEY_NONE },
+    { "ctrlwheel5",    185, KEY_NONE },
+    { "ctrlwheel6",    186, KEY_NONE },
+    { "ctrlwheel7",    187, KEY_NONE },
+    { "ctrlwheel8",    188, KEY_NONE },
+    { "ctrlwheel1",    189, KEY_NONE }, // We want top right to be 1 and top left to be 8
+    { "logoleft",      190, KEY_NONE },
+    { "logo",          191, KEY_NONE },
+    { "logoright",     192, KEY_NONE },
     { "status",          0, KEY_NONE }, // This might need to be moved elsewhere
-    { "topbar1",       137, KEY_NONE },
-    { "topbar2",       138, KEY_NONE },
-    { "topbar3",       139, KEY_NONE },
-    { "topbar4",       140, KEY_NONE },
-    { "topbar5",       141, KEY_NONE },
-    { "topbar6",       142, KEY_NONE },
-    { "topbar7",       143, KEY_NONE },
-    { "topbar8",       144, KEY_NONE },
-    { "topbar9",       145, KEY_NONE },
-    { "topbar10",      146, KEY_NONE },
-    { "topbar11",      147, KEY_NONE },
-    { "topbar12",      148, KEY_NONE },
-    { "topbar13",      149, KEY_NONE },
-    { "topbar14",      150, KEY_NONE },
-    { "topbar15",      151, KEY_NONE },
-    { "topbar16",      152, KEY_NONE },
-    { "topbar17",      153, KEY_NONE },
-    { "topbar18",      154, KEY_NONE },
-    { "topbar19",      155, KEY_NONE },
 };
 
 // LUT for HID -> Corsair scancodes (-1 for no scan code, -2 for currently unsupported)
@@ -512,7 +556,7 @@ static const short hid_codes[256] = {
 
 static inline void handle_bragi_key_input(unsigned char* kbinput, const unsigned char* urbinput, int length){
     // Handle the 01 input and 02 media keys
-    // On the K57 WL length is 16, but on the K95P XT it is 21
+    // On the K57 WL length is 16, but on the K95P XT and K60 (1b1c:1bad) it is 21
     if(urbinput[0] == NKRO_KEY_IN && length >= 16){
         // Skipping the first two bytes, the following 13 bytes can be copied as-is, with an offset
         // So let's copy them first before we start bodging
@@ -523,8 +567,39 @@ static inline void handle_bragi_key_input(unsigned char* kbinput, const unsigned
         kbinput[13] = (kbinput[13] & 1) | (urbinput[1] << 1);
 
         // Finally, copy the left over rwin that we lost due to the left shift above
-        // We can ovewrite the other bits with 0 as they aren't really used in NKRO mode
+        // as well as the international keys (below)
         kbinput[14] = urbinput[1] >> 7;
+
+        // The 16 byte ones have their HID descriptors as follows:
+        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+        //   Usage Minimum (0x00)
+        //   Usage Maximum (0x67)
+        //   Report Count (104)
+        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+        //   Usage Minimum (0x87)
+        //   Usage Maximum (0x8E)
+        //   Report Count (8)
+
+        // The 21 byte ones have the full range 0x00~0x97
+        if(length == 16) {
+            // The international keys fall in the last byte.
+            // In the bragi keymap, ro (bit 0) is 3 bits after rwin (bit 0)
+
+            // This is untested, but it should work(tm)!
+            kbinput[14] |= urbinput[15] << 3;
+            // No room for intl8, it overlaps with fn (and also likely unused) :(
+            kbinput[15] |= (urbinput[15] >> 5) & 3;
+        } else if(length == 21) {
+            // Grab the ro (intl1) key and add it to the keymap
+            kbinput[14] |= (urbinput[18] & 0x80) >> 4;
+            // Then from intl2 to intl5 (incl.), to fill the remaining 4 bits in the keymap byte
+            kbinput[14] |= urbinput[19] << 4;
+            // And finally, intl6 and intl7 to fill the first 2 bits in the next keymap byte.
+            kbinput[15] |= (urbinput[19] >> 4) & 3;
+            // Also no room for intl8 :(
+        } else {
+            ckb_warn("Unhandled NKRO_KEY_IN length %d in handle_bragi_key_input(), international keys will not function", length);
+        }
     } else if(urbinput[0] == NKRO_MEDIA_IN && length == 3) {
         // This section is similar to handle_nkro_media_keys(), but with different indices due to the different keymap
         // This works because these keys can not be pressed at the same time
@@ -640,6 +715,9 @@ void process_input_urb(void* context, unsigned char* buffer, int urblen, ushort 
 
     // If the response starts with CMD_GET (0x0e) for NXP, or it came from a bragi command EP, that means it needs to go to os_usbrecv()
     if(urblen == kb->out_ep_packet_size && (firstbyte == CMD_GET || (kb->protocol == PROTO_BRAGI && ep == kb->bragi_in_ep))){
+#ifdef DEBUG_USB_RECV
+    print_urb_buffer("Recv:", buffer, urblen, NULL, 0, NULL, INDEX_OF(targetkb, keyboard), (uchar)ep);
+#endif
         int retval = pthread_mutex_lock(intmutex(targetkb));
         if(retval)
             ckb_fatal("Error locking interrupt mutex %i", retval);
@@ -759,14 +837,32 @@ void process_input_urb(void* context, unsigned char* buffer, int urblen, ushort 
                         ckb_err("Unknown bragi data received in input thread %02x from endpoint %02x", firstbyte, ep);
                     }
                 } else {
-                    // Accept NKRO only if device is not active
+#define NXP_STRAFE_MEDIA_WORKAROUND(kb) (kb->vendor == V_CORSAIR && kb->product == P_STRAFE)
+#define NXP_STRAFE_MEDIA_MASK 0x3e
+//#define NXP_STRAFE_VOL_MASK 0xc
+                    // Accept NKRO only if device is not active, unless it's media keys and it's an original strafe with the media key bug
                     if(firstbyte == NKRO_KEY_IN || firstbyte == NKRO_MEDIA_IN) {
-                        if(!targetkb->active)
+                        if(!targetkb->active || (firstbyte == NKRO_MEDIA_IN && NXP_STRAFE_MEDIA_WORKAROUND(targetkb)))
                             hid_kb_translate(targetkb->input.keys, urblen, buffer, 0);
                     } else if(urblen == MSG_SIZE) {
-                        if((kb->fwversion >= 0x130 || IS_V2_OVERRIDE(kb)) && firstbyte == CORSAIR_IN) // Ugly hack due to old FW 1.15 packets having no header
+                        if((kb->fwversion >= 0x130 || IS_V2_OVERRIDE(kb)) && firstbyte == CORSAIR_IN) // Ugly hack due to old FW 1.15 packets having no report id
                             buffer++;
-                        corsair_kbcopy(targetkb->input.keys, buffer);
+                        // If it's an original strafe RGB, to work around the media keys getting stuck down on the 03 packet,
+                        // we save the bits before the kbcopy and then restore them afterwards for the 02 packet to take effect.
+                        if(NXP_STRAFE_MEDIA_WORKAROUND(targetkb)) {
+                            // Store
+                            uchar media_key_state_1 = targetkb->input.keys[12];
+                            uchar media_key_state_2 = targetkb->input.keys[16];
+                            // Apply fresh key data
+                            corsair_kbcopy(targetkb->input.keys, buffer);
+                            // Restore
+                            targetkb->input.keys[12] = (targetkb->input.keys[12] & ~NXP_STRAFE_MEDIA_MASK) | (media_key_state_1 & NXP_STRAFE_MEDIA_MASK);
+                            //targetkb->input.keys[16] = (targetkb->input.keys[16] & ~NXP_STRAFE_VOL_MASK) | (media_key_state_2 & NXP_STRAFE_VOL_MASK);
+                            // We can just copy this byte as-is, as there are no M or G keys in the strafe.
+                            targetkb->input.keys[16] = media_key_state_2;
+                        } else {
+                            corsair_kbcopy(targetkb->input.keys, buffer);
+                        }
                     } else {
                         ckb_err("Unknown data received in input thread %02x from endpoint %02x", firstbyte, ep);
                     }
@@ -1035,7 +1131,7 @@ void corsair_bragi_mousecopy(usbdevice* kb, usbinput* input, const unsigned char
 
     // Some devices only have one byte, so set those to 8 buttons
     // We need a better way to identify this
-    if(kb->vendor == V_CORSAIR && (kb->product == P_M55_RGB_PRO || kb->product == P_DARK_CORE_RGB_PRO_SE || kb->product == P_DARK_CORE_RGB_PRO_SE_WL || kb->product == P_HARPOON_WL_U))
+    if(kb->vendor == V_CORSAIR && (kb->product == P_M55_RGB_PRO || kb->product == P_DARK_CORE_RGB_PRO_SE || kb->product == P_DARK_CORE_RGB_PRO_SE_WL || kb->product == P_HARPOON_WL_U || kb->product == P_DARK_CORE_RGB_PRO || kb->product == P_DARK_CORE_RGB_PRO_WL))
         buttons = BRAGI_ONE_BYTE_MOUSE_BUTTONS;
 
     // Pick the appropriate LUT. We can't patch the keymap as that will break standard HID input.
